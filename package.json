@@ -1,0 +1,50 @@
+{
+  "name": "foodtrace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FoodTrace checks food product and batch information against configured recall sources and shows the evidence behind every result.",
+  "scripts": {
+    "dev": "next dev --port 3460",
+    "build": "prisma generate && next build",
+    "start": "next start --port 3460",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "prisma migrate deploy && tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "@tanstack/react-query": "^5.90.2",
+    "framer-motion": "^12.23.22",
+    "genlayer-js": "2.0.0-rc.1",
+    "lucide-react": "^0.544.0",
+    "next": "^15.5.27",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "viem": "^2.37.9",
+    "wagmi": "^2.17.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.36.0",
+    "eslint-config-next": "^15.5.27",
+    "genlayer": "0.40.0-rc.3",
+    "postcss": "^8.5.6",
+    "prisma": "^6.16.2",
+    "tailwindcss": "^4.1.13",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

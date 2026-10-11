@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id
+  walletAddress String?         @unique
+  email         String?         @unique
+  role          String          @default("consumer")
+  defaultRegion String          @default("")
+  emailAlerts   Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  lookups       ProductLookup[]
+  businesses    Business[]
+}
+
+model Business {
+  id                 String          @id
+  ownerId            String?
+  owner              User?           @relation(fields: [ownerId], references: [id])
+  ownerWalletAddress String
+  name               String
+  region             String
+  createdAt          DateTime        @default(now())
+  items              InventoryItem[]
+
+  @@index([ownerWalletAddress])
+}
+
+model ProductLookup {
+  id             String              @id
+  userId         String?
+  user           User?               @relation(fields: [userId], references: [id])
+  barcode        String              @default("")
+  productName    String              @default("")
+  brand          String              @default("")
+  lotNumber      String              @default("")
+  expirationDate String              @default("")
+  region         String              @default("")
+  status         String
+  createdAt      DateTime            @default(now())
+  evidence       EvidenceRecord[]
+  recalls        RecallRecord[]
+  result         VerificationResult?
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([status])
+  @@index([barcode])
+  @@index([lotNumber])
+}
+
+model RecallRecord {
+  id              String        @id
+  lookupId        String?
+  lookup          ProductLookup? @relation(fields: [lookupId], references: [id])
+  sourceName      String
+  sourceUrl       String
+  productName     String
+  brand           String
+  barcode         String        @default("")
+  lotNumbers      String
+  recallReason    String
+  recallDate      String
+  geographicScope String
+  rawEvidence     String
+  retrievedAt     DateTime
+  isDemoData      Boolean       @default(false)
+  sourcePriority  Int
+  recordKind      String        @default("recall")
+  region          String        @default("")
+
+  @@index([lookupId])
+  @@index([barcode])
+  @@index([brand])
+  @@index([isDemoData])
+}
+
+model EvidenceRecord {
+  id             String        @id
+  lookupId       String
+  lookup         ProductLookup @relation(fields: [lookupId], references: [id])
+  sourceName     String
+  sourceUrl      String
+  evidenceText   String
+  evidenceHash   String
+  sourcePriority Int
+  retrievedAt    DateTime
+  matched        Boolean       @default(false)
+  recordKind     String        @default("context")
+  matchCriteria  String        @default("")
+
+  @@index([lookupId])
+  @@index([evidenceHash])
+}
+
+model VerificationResult {
+  id                    String    @id
+  lookupId              String    @unique
+  lookup                ProductLookup @relation(fields: [lookupId], references: [id])
+  status                String
+  confidence            String
+  reasoningSummary      String
+  matchedCriteria       String
+  sourcesChecked        String
+  preliminaryStatus     String
+  preliminarySummary    String
+  genlayerTransactionId String    @default("")
+  genlayerEvaluationId  String    @default("")
+  proposedEvaluationId  String    @default("")
+  evidenceHash          String
+  evaluatedAt           DateTime
+  isMock                Boolean   @default(false)
+  finalizationStatus    String
+  chainPayload          String    @default("")
+  appeals               Appeal[]
+
+  @@index([genlayerEvaluationId])
+  @@index([genlayerTransactionId])
+  @@index([finalizationStatus])
+}
+
+model InventoryItem {
+  id             String    @id
+  businessId     String
+  business       Business  @relation(fields: [businessId], references: [id])
+  productName    String
+  brand          String
+  barcode        String    @default("")
+  lotNumber      String    @default("")
+  expirationDate String    @default("")
+  quantity       Int
+  supplier       String    @default("")
+  status         String    @default("unverified")
+  lastCheckedAt  DateTime?
+  lastLookupId   String    @default("")
+  createdAt      DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([status])
+  @@index([expirationDate])
+  @@index([barcode])
+}
+
+model Appeal {
+  id                    String              @id
+  verificationResultId  String
+  result                VerificationResult  @relation(fields: [verificationResultId], references: [id])
+  reason                String
+  newEvidence           String
+  explanation           String              @default("")
+  status                String
+  outcomeStatus         String              @default("")
+  outcomeSummary        String              @default("")
+  genlayerTransactionId String              @default("")
+  isMock                Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+  resolvedAt            DateTime?
+
+  @@index([verificationResultId])
+  @@index([status])
+}
+
+model ReplayNonce {
+  id        String   @id
+  wallet    String
+  nonce     String
+  usedAt    DateTime @default(now())
+
+  @@unique([wallet, nonce])
+  @@index([usedAt])
+}

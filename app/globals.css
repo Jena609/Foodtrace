@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-source-sans), "Segoe UI", sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --color-paper: #f4f1eb;
+  --color-card: #fffcf8;
+  --color-ink: #1c1915;
+  --color-muted: #5e584f;
+  --color-line: #e4ddd2;
+  --color-pine: #0e5c4a;
+  --color-pine-dark: #083f33;
+  --color-mist: #e7f3ee;
+  --color-lake: #2c5f7c;
+  --color-lake-soft: #e7f1f6;
+  --color-recall: #9d1c1c;
+  --color-recall-soft: #fdecec;
+  --color-amber: #8a4b08;
+  --color-amber-soft: #fbf3e6;
+  --color-plum: #5c3d86;
+  --color-plum-soft: #f4eef8;
+  --color-slate: #4b5563;
+  --color-slate-soft: #eef0f2;
+  --color-pending: #8a6a12;
+  --color-pending-soft: #fbf6e4;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--color-paper); color: var(--color-ink); }
+::selection { background: #d7ebe3; }
+:focus-visible { outline: 2px solid var(--color-pine); outline-offset: 2px; }
+.nextjs-portal { display: none; }
+
+.hero-wash {
+  background:
+    radial-gradient(900px 420px at 100% -10%, rgba(44, 95, 124, 0.1), transparent 55%),
+    radial-gradient(720px 380px at -10% 0%, rgba(14, 92, 74, 0.12), transparent 50%),
+    var(--color-paper);
+}
+
+.ft-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(48, 38, 24, 0.05);
+}
+
+.ft-input, .ft-select, .ft-textarea {
+  width: 100%;
+  border: 1px solid #d9d1c5;
+  background: white;
+  color: var(--color-ink);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  font: inherit;
+}
+.ft-input:focus, .ft-select:focus, .ft-textarea:focus { border-color: var(--color-pine); outline: none; box-shadow: 0 0 0 3px rgba(14, 92, 74, 0.15); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes ft-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes ft-scan {
+  0% { transform: translateX(0); opacity: 0; }
+  18% { opacity: 0.95; }
+  100% { transform: translateX(52px); opacity: 0; }
+}
+.ft-float { animation: ft-float 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.ft-scan { animation: ft-scan 1.15s ease-in-out 3.6s both; }
+.ft-scene.is-paused .ft-float,
+.ft-scene.is-paused .ft-scan { animation-play-state: paused; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .ft-card { box-shadow: none; }
+}
