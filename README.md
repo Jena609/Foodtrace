@@ -6,6 +6,8 @@ FoodTrace helps you trace products, check recall information, and understand the
 
 FoodTrace is an information and verification tool. It does not guarantee that food is safe and does not replace official food-safety guidance.
 
+The production app is https://foodtrace-six.vercel.app on the Vercel project `foodtrace`. Lookup, history, and other database routes need a hosted database. The current production database URL is a local SQLite file, so those routes return unavailable on Vercel.
+
 ## Why FoodTrace
 
 A barcode scan or a product name is not a safety certification. FoodTrace keeps the product identity, the sources that were checked, and the resulting verdict together. A result can say that recall information was found, that no matching recall was found in the checked sources, that the supplied date is expired, that the sources conflict, or that the product could not be verified. It never says that a product is safe to eat.

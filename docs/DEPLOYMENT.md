@@ -78,6 +78,16 @@ The app polls the transaction until the explorer or receipt shows a final status
 
 Open `https://explorer-studio-dev.genlayer.com/tx/{hash}`. Confirm the sender, the FoodTrace contract address, and the status.
 
-## 13. Submit an appeal
+## 13. Host the web app
+
+The Vercel project is `foodtrace` on team `kira-68d0`. Production is https://foodtrace-six.vercel.app. Deploy this app only to that project.
+
+Production uses Studio mode, the Studio Next RPC `https://studio-dev.genlayer.com/api`, and contract `0x3973d96145dBe83d61b36C86266D758dD3655a14`. `NEXT_PUBLIC_APP_URL` is the production origin above. The session secret stays in Vercel and is not stored in this repository.
+
+`DATABASE_URL=file:./dev.db` does not persist on Vercel serverless. `/api/health` returns `database_unavailable` until a hosted database is configured. The landing page and the lookup form still render.
+
+GitHub is not connected for automatic deploys. `.vercel` and `.env.local` stay gitignored.
+
+## 14. Submit an appeal
 
 An appeal is available for a finalized, non-mock result that has a public `https` evidence URL. The wallet signs `submit_appeal`. The appeal is stored beside the original verdict and does not replace it. No finalized appeal hash is recorded yet. Do not add one until the explorer shows it.
