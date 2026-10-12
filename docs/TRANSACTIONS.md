@@ -8,6 +8,22 @@ Signer: `0x5F85c75F8442b92ba66C30371CEf6cF3D7B4c650`.
 
 Contract: `0x3973d96145dBe83d61b36C86266D758dD3655a14`.
 
+These three values are not interchangeable. The contract address is the deployed FoodTrace contract. The deployment hash is the transaction that created it. The verification hash is a later `submit_verification_request`. The evaluation ID is the request id carried by that verification.
+
+Checked against the Studio Next explorer and https://foodtrace-six.vercel.app/api/lookup/lk_2fc5a313f48547e491b2737b1e2fa3ef on 2026-10-12.
+
+| Type | Hash / ID | Status | Network | Created (UTC) |
+| --- | --- | --- | --- | --- |
+| Contract deployment | `0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1` | FINALIZED | GenLayer Studio Next | 2026-10-11T16:33:15.326334Z |
+| Verification transaction | `0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523` | FINALIZED | GenLayer Studio Next | 2026-10-12T13:09:57.494762Z |
+| Evaluation ID | `ftv_e47a580bf59c4b66bc46c4654ac70bab` | FINALIZED | GenLayer Studio Next | 2026-10-12T13:09:57.494762Z |
+
+The explorer records the deployment as type `1` and the verification as type `2`. Both name the contract above as `to_address`. The verification calldata and leader receipt contain `ftv_e47a580bf59c4b66bc46c4654ac70bab`. That evaluation does not have a separate explorer timestamp, so the table uses the verification transaction’s created time. The explorer monitoring time for `FINALIZED` is 2026-10-11T16:33:47.416Z for the deployment and 2026-10-12T13:41:00.135Z for the verification. The public result stored that same check at 2026-10-12T13:41:49.060Z. The result is `EXACT_RECALL_MATCH`, and the contract verdict read back for this evaluation is `RECALL_FOUND`.
+
+- Contract: https://explorer-studio-dev.genlayer.com/address/0x3973d96145dBe83d61b36C86266D758dD3655a14
+- Deployment transaction: https://explorer-studio-dev.genlayer.com/tx/0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1
+- Verification transaction: https://explorer-studio-dev.genlayer.com/tx/0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523
+
 | Kind | Hash | Status | Created (UTC) |
 | --- | --- | --- | --- |
 | Deployment | `0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1` | FINALIZED | 2026-10-11T16:33:15.326334Z |

@@ -91,16 +91,23 @@ Result states:
 
 ## 10. Contract information
 
-These values were read from the Studio Next explorer and the deployed contract code:
+These values were read from the Studio Next explorer, `/api/health`, and the public lookup `lk_2fc5a313f48547e491b2737b1e2fa3ef`:
 
 - Network: GenLayer Studio Next (`studio-dev`)
 - Chain ID: `61997`
 - RPC: `https://studio-dev.genlayer.com/api`
 - Explorer: `https://explorer-studio-dev.genlayer.com`
-- Contract: `0x3973d96145dBe83d61b36C86266D758dD3655a14`
-- Deployment transaction: `0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1` (`FINALIZED`)
+- Contract address: `0x3973d96145dBe83d61b36C86266D758dD3655a14`
+- Contract explorer: https://explorer-studio-dev.genlayer.com/address/0x3973d96145dBe83d61b36C86266D758dD3655a14
+- Deployment transaction: `0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1` (`FINALIZED`, created 2026-10-11T16:33:15.326334Z)
+- Deployment explorer: https://explorer-studio-dev.genlayer.com/tx/0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1
+- Latest verification transaction: `0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523` (`FINALIZED`, created 2026-10-12T13:09:57.494762Z)
+- Verification explorer: https://explorer-studio-dev.genlayer.com/tx/0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523
+- Latest evaluation ID: `ftv_e47a580bf59c4b66bc46c4654ac70bab`
 
-A finalized product check read back from `get_verification_result`:
+The deployment transaction and the verification transaction are different hashes. The evaluation ID is the FoodTrace request id stored with the verification transaction. It is not a contract address and it is not a transaction hash.
+
+An earlier finalized product check remains available:
 
 - Lookup: `lk_f955826a00bb43188b3a129dd663847d`
 - Evaluation ID: `ftv_f8a28a3d728f48b1973d3d509d985354`

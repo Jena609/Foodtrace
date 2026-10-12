@@ -60,7 +60,18 @@ Studio mode uses GenLayer Studio Next:
 | Explorer | `https://explorer-studio-dev.genlayer.com` |
 | Studio app | `https://studio-dev.genlayer.com` |
 | Currency | GEN, 18 decimals |
-| Contract | `0x3973d96145dBe83d61b36C86266D758dD3655a14` |
+| Contract address | `0x3973d96145dBe83d61b36C86266D758dD3655a14` |
+| Contract deployment transaction | `0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1` |
+| Latest verification transaction | `0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523` |
+| Latest evaluation ID | `ftv_e47a580bf59c4b66bc46c4654ac70bab` |
+
+The contract address is the deployed FoodTrace contract. The deployment transaction created that contract. The verification transaction is a later call to the same contract, and the evaluation ID is the request id inside that call. Neither hash is the contract address.
+
+- Contract: https://explorer-studio-dev.genlayer.com/address/0x3973d96145dBe83d61b36C86266D758dD3655a14
+- Deployment transaction: https://explorer-studio-dev.genlayer.com/tx/0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1
+- Verification transaction: https://explorer-studio-dev.genlayer.com/tx/0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523
+
+The explorer showed both transactions as `FINALIZED` on GenLayer Studio Next, chain `61997`. The deployment was created at 2026-10-11T16:33:15.326334Z. The verification was created at 2026-10-12T13:09:57.494762Z and the explorer recorded it `FINALIZED` at 2026-10-12T13:41:00.135Z. The public result for evaluation `ftv_e47a580bf59c4b66bc46c4654ac70bab` is https://foodtrace-six.vercel.app/results/lk_2fc5a313f48547e491b2737b1e2fa3ef.
 
 The app accepts `NEXT_PUBLIC_GENLAYER_NETWORK=studio` for this network. Studionet (`https://studio.genlayer.com/api`, chain `61999`) is rejected. The JavaScript SDK chain object is `studioDevnet` from `genlayer-js` `2.0.0-rc.1`. Production runs with `FOODTRACE_GENLAYER_MODE=studio`.
 

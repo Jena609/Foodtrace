@@ -86,7 +86,24 @@ Production data is stored in Turso (SQLite-compatible) through `TURSO_DATABASE_U
 
 `/api/health` returns `database: ok` and `databaseProvider: turso` when the connection works. A database failure returns HTTP 503 `database_unavailable` and does not invent a lookup result.
 
-Production uses Studio mode, the Studio Next RPC `https://studio-dev.genlayer.com/api`, chain ID `61997`, and contract `0x3973d96145dBe83d61b36C86266D758dD3655a14`. `NEXT_PUBLIC_APP_URL` is the production origin above. The session secret and the server signer stay in Vercel and are not stored in this repository. `DATABASE_URL=file:./dev.db` is only the local database.
+Production uses Studio mode. These values were checked on the Studio Next explorer and `/api/health`. Secret values stay in Vercel and are not listed here.
+
+| Record | Value |
+| --- | --- |
+| Network | GenLayer Studio Next |
+| Chain ID | `61997` |
+| RPC | `https://studio-dev.genlayer.com/api` |
+| Explorer | `https://explorer-studio-dev.genlayer.com` |
+| Contract address | `0x3973d96145dBe83d61b36C86266D758dD3655a14` |
+| Contract deployment transaction | `0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1` |
+| Latest verification transaction | `0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523` |
+| Latest evaluation ID | `ftv_e47a580bf59c4b66bc46c4654ac70bab` |
+
+`NEXT_PUBLIC_APP_URL` is the production origin above. `FOODTRACE_SESSION_SECRET`, `FOODTRACE_GENLAYER_SIGNER_PRIVATE_KEY`, `TURSO_DATABASE_URL`, and `TURSO_AUTH_TOKEN` stay in Vercel and are not stored in this repository. `DATABASE_URL=file:./dev.db` is only the local database.
+
+- Contract: https://explorer-studio-dev.genlayer.com/address/0x3973d96145dBe83d61b36C86266D758dD3655a14
+- Deployment transaction: https://explorer-studio-dev.genlayer.com/tx/0x9d468a212f615c8041ef9f0fea8652bb096ec9a8261997d89109117bdf089fa1
+- Verification transaction: https://explorer-studio-dev.genlayer.com/tx/0x84c3e2b9df9b98b2947d571b90e5dccb89ac40166e4f7428cbc7cce82ec2d523
 
 GitHub is not connected for automatic deploys. `.vercel` and `.env.local` stay gitignored.
 
