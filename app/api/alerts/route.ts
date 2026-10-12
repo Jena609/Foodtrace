@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/db/log";
 import { DEMO_ITEMS } from "@/lib/inventory/demo";
 import { inventorySummary } from "@/lib/inventory/service";
 import { alertsFor, deriveInventoryStatus } from "@/lib/inventory/status";
@@ -24,7 +25,12 @@ export async function GET(request: Request) {
   }
   const signature = await requireSignature(request, "alerts.read", {});
   if (!signature.ok) return apiError(401, "unauthorized", signature.error);
-  const summary = await inventorySummary(signature.wallet);
-  if (!summary) return apiOk({ demo: false, alerts: [], business: null });
-  return apiOk({ demo: false, alerts: summary.alerts, business: summary.business });
+  try {
+    const summary = await inventorySummary(signature.wallet);
+    if (!summary) return apiOk({ demo: false, alerts: [], business: null });
+    return apiOk({ demo: false, alerts: summary.alerts, business: summary.business });
+  } catch (error) {
+    logServerError("alerts.read", error);
+    return apiError(503, "database_unavailable", "Alerts could not be read. Check the database and try again.");
+  }
 }

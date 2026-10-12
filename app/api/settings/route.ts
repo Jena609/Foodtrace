@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/client";
+import { logServerError } from "@/lib/db/log";
 import { publicConfig } from "@/lib/genlayer/config";
 import { apiError, apiOk, fromZod, readJson } from "@/lib/http";
 import { applySession, ensureSession, sessionUserId } from "@/lib/security/actor";
@@ -7,14 +8,19 @@ import { emailSchema } from "@/lib/validation/schemas";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const userId = await sessionUserId(request);
   const config = publicConfig();
-  if (!userId) return apiOk({ user: null, config });
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  return apiOk({
-    user: user ? { id: user.id, email: user.email ?? "", walletAddress: user.walletAddress ?? "", role: user.role, defaultRegion: user.defaultRegion, emailAlerts: user.emailAlerts } : null,
-    config,
-  });
+  try {
+    const userId = await sessionUserId(request);
+    if (!userId) return apiOk({ user: null, config });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    return apiOk({
+      user: user ? { id: user.id, email: user.email ?? "", walletAddress: user.walletAddress ?? "", role: user.role, defaultRegion: user.defaultRegion, emailAlerts: user.emailAlerts } : null,
+      config,
+    });
+  } catch (error) {
+    logServerError("settings.read", error);
+    return apiError(503, "database_unavailable", "Settings could not be loaded. Check the database and try again.");
+  }
 }
 
 export async function POST(request: Request) {
@@ -37,7 +43,12 @@ export async function POST(request: Request) {
       },
     });
     return applySession(apiOk({ user: { id: user.id, email: user.email ?? "", defaultRegion: user.defaultRegion, emailAlerts: user.emailAlerts } }), session.cookie);
-  } catch {
-    return apiError(409, "email_in_use", "That email is already used on another FoodTrace profile.");
+  } catch (error) {
+    logServerError("settings.write", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.toLowerCase().includes("unique") || message.toLowerCase().includes("email")) {
+      return apiError(409, "email_in_use", "That email is already used on another FoodTrace profile.");
+    }
+    return apiError(503, "database_unavailable", "Settings could not be saved. Check the database and try again.");
   }
 }

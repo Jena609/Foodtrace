@@ -6,7 +6,7 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 import { HeroStory } from "@/components/landing/HeroStory";
 
-const phases = ["Checking sources", "Evidence found", "Trace verified"] as const;
+const phases = ["Checking sources", "Evidence found", "Check complete"] as const;
 
 export function Hero() {
   const reduce = useReducedMotion();
@@ -62,7 +62,7 @@ export function Hero() {
             <Link href="/lookup" className="rounded-full bg-pine px-5 py-3 text-center font-semibold text-white transition hover:bg-pine-dark">Check a Product</Link>
             <a href="#how-it-works" className="rounded-full border border-line bg-white px-5 py-3 text-center font-semibold transition hover:border-pine">See How It Works</a>
           </div>
-          <p className="sr-only">Illustrated demo: foods appear, a leaf mascot checks a package, and a sample card moves from checking sources to evidence found to trace verified. This is not a real product result.</p>
+          <p className="sr-only">Illustrated demo: foods appear, a leaf mascot checks a package, and a sample card moves from checking sources to evidence found to check complete. This is not a real product result.</p>
         </motion.div>
         <div className="order-1 lg:order-2">
           <HeroStory play={play} paused={!inView} />

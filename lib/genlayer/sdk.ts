@@ -1,5 +1,6 @@
 import { createClient } from "genlayer-js";
 import { studioDevnet } from "genlayer-js/chains";
+import type { Account } from "viem";
 import { STUDIO_NEXT, UNAVAILABLE_MESSAGE } from "@/lib/genlayer/config";
 
 interface Eip1193Provider {
@@ -27,7 +28,7 @@ export function assertConfiguredStudioRpc(configuredRpc: string | undefined): vo
 }
 
 export async function createStudioClient(options?: {
-  account?: `0x${string}`;
+  account?: Account | `0x${string}`;
   provider?: Eip1193Provider;
 }) {
   assertConfiguredStudioRpc(process.env.NEXT_PUBLIC_GENLAYER_RPC_URL);

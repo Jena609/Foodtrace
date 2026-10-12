@@ -82,9 +82,11 @@ Open `https://explorer-studio-dev.genlayer.com/tx/{hash}`. Confirm the sender, t
 
 The Vercel project is `foodtrace` on team `kira-68d0`. Production is https://foodtrace-six.vercel.app. Deploy this app only to that project.
 
-Production uses Studio mode, the Studio Next RPC `https://studio-dev.genlayer.com/api`, and contract `0x3973d96145dBe83d61b36C86266D758dD3655a14`. `NEXT_PUBLIC_APP_URL` is the production origin above. The session secret stays in Vercel and is not stored in this repository.
+Production data is stored in Turso (SQLite-compatible) through `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. Those values come from the Vercel Turso integration on the Starter plan. They are server-only. `DATABASE_URL=file:./dev.db` remains the local SQLite file and is not the production database. The first production request creates the tables from `prisma/migrations/20261011120000_init/migration.sql` when the `User` table is missing.
 
-`DATABASE_URL=file:./dev.db` does not persist on Vercel serverless. `/api/health` returns `database_unavailable` until a hosted database is configured. The landing page and the lookup form still render.
+`/api/health` returns `database: ok` and `databaseProvider: turso` when the connection works. A database failure returns HTTP 503 `database_unavailable` and does not invent a lookup result.
+
+Production uses Studio mode, the Studio Next RPC `https://studio-dev.genlayer.com/api`, chain ID `61997`, and contract `0x3973d96145dBe83d61b36C86266D758dD3655a14`. `NEXT_PUBLIC_APP_URL` is the production origin above. The session secret and the server signer stay in Vercel and are not stored in this repository. `DATABASE_URL=file:./dev.db` is only the local database.
 
 GitHub is not connected for automatic deploys. `.vercel` and `.env.local` stay gitignored.
 

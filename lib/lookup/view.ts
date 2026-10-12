@@ -1,7 +1,9 @@
 import type { Appeal, EvidenceRecord, ProductLookup, RecallRecord, VerificationResult } from "@prisma/client";
 import { FINALIZATION_COPY, SAFETY_DISCLAIMER, STATUS_COPY } from "@/lib/copy";
+import { resolveGenLayerConfig } from "@/lib/genlayer/config";
 import type { Confidence, FinalizationStatus, MatchDecision, ProductSearchInput, SourceRun, VerdictStatus } from "@/lib/types";
 import type { PublicAppeal, PublicReport } from "@/lib/reports/public-report";
+import { dataStatus, displayClassification, reviewStatus, sourceAgreement, type DataStatus, type DisplayClassification, type ReviewStatus } from "@/lib/verification/classification";
 
 export interface LookupRecord extends ProductLookup {
   evidence: EvidenceRecord[];
@@ -40,10 +42,23 @@ export interface LookupView {
   proposedEvaluationId: string;
   evidenceHash: string;
   evaluatedAt: string;
+  submittedAt: string | null;
+  finalizedAt: string | null;
+  lastError: string;
   resultId: string;
   evidence: EvidenceView[];
   appeals: PublicAppeal[];
   disclaimer: string;
+  classification: DisplayClassification;
+  reviewStatus: ReviewStatus;
+  dataStatus: DataStatus;
+  sourceAgreement: string;
+  classificationSource: "genlayer" | "foodtrace";
+  genlayerNetwork: string;
+  genlayerChainId: number | null;
+  contractAddress: string;
+  contractUrl: string;
+  transactionUrl: string;
 }
 
 function parseJson<T>(value: string, fallback: T): T {
@@ -69,6 +84,20 @@ export function displayedVerdict(result: { status: string; reasoningSummary: str
 export function toLookupView(row: LookupRecord): LookupView | null {
   if (!row.result) return null;
   const shown = displayedVerdict(row.result);
+  const sourcesChecked = parseJson<SourceRun[]>(row.result.sourcesChecked, []);
+  const evidence = row.evidence.map((item) => ({
+    id: item.id,
+    sourceName: item.sourceName,
+    sourceUrl: item.sourceUrl,
+    evidenceText: item.evidenceText,
+    evidenceHash: item.evidenceHash,
+    sourcePriority: item.sourcePriority,
+    retrievedAt: item.retrievedAt.toISOString(),
+    matched: item.matched,
+    recordKind: item.recordKind,
+    matchCriteria: parseJson<string[]>(item.matchCriteria, []),
+    demo: row.recalls.find((recall) => recall.sourceUrl === item.sourceUrl && recall.sourceName === item.sourceName)?.isDemoData ?? item.evidenceText.includes("Demo: yes"),
+  }));
   const appeals: PublicAppeal[] = row.result.appeals
     .slice()
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -100,7 +129,7 @@ export function toLookupView(row: LookupRecord): LookupView | null {
     confidence: row.result.confidence as Confidence,
     reasoningSummary: shown.reasoningSummary,
     matchedCriteria: parseJson<string[]>(row.result.matchedCriteria, []),
-    sourcesChecked: parseJson<SourceRun[]>(row.result.sourcesChecked, []),
+    sourcesChecked,
     finalizationStatus: row.result.finalizationStatus as FinalizationStatus,
     finalizationDetail: shown.finalizationDetail,
     isMock: row.result.isMock,
@@ -109,22 +138,40 @@ export function toLookupView(row: LookupRecord): LookupView | null {
     proposedEvaluationId: row.result.proposedEvaluationId,
     evidenceHash: row.result.evidenceHash,
     evaluatedAt: row.result.evaluatedAt.toISOString(),
+    submittedAt: row.result.submittedAt?.toISOString() ?? null,
+    finalizedAt: row.result.finalizedAt?.toISOString() ?? null,
+    lastError: row.result.lastError,
     resultId: row.result.id,
-    evidence: row.evidence.map((item) => ({
-      id: item.id,
-      sourceName: item.sourceName,
-      sourceUrl: item.sourceUrl,
-      evidenceText: item.evidenceText,
-      evidenceHash: item.evidenceHash,
-      sourcePriority: item.sourcePriority,
-      retrievedAt: item.retrievedAt.toISOString(),
-      matched: item.matched,
-      recordKind: item.recordKind,
-      matchCriteria: parseJson<string[]>(item.matchCriteria, []),
-      demo: row.recalls.find((recall) => recall.sourceUrl === item.sourceUrl && recall.sourceName === item.sourceName)?.isDemoData ?? item.evidenceText.includes("Demo: yes"),
-    })),
+    evidence,
     appeals,
     disclaimer: SAFETY_DISCLAIMER,
+    ...verificationFields(shown.status, parseJson<string[]>(row.result.matchedCriteria, []), row.result.finalizationStatus, row.result.isMock, row.result.genlayerTransactionId, evidence, sourcesChecked),
+  };
+}
+
+function verificationFields(
+  status: VerdictStatus,
+  criteria: string[],
+  finalizationStatus: string,
+  isMock: boolean,
+  transactionId: string,
+  evidence: Array<{ demo: boolean; matched: boolean; recordKind: string }>,
+  sources: Array<{ demo?: boolean; skipped?: boolean }>,
+) {
+  const config = resolveGenLayerConfig(process.env);
+  const finalized = finalizationStatus === "finalized" && !isMock;
+  const contractUrl = config.studioReady ? `${config.explorerUrl}/address/${config.contractAddress}` : "";
+  return {
+    classification: displayClassification(status, criteria, evidence),
+    reviewStatus: reviewStatus(finalizationStatus, isMock),
+    dataStatus: dataStatus(evidence, sources),
+    sourceAgreement: sourceAgreement(status, evidence),
+    classificationSource: finalized ? "genlayer" as const : "foodtrace" as const,
+    genlayerNetwork: config.studioReady ? config.networkName : "",
+    genlayerChainId: config.studioReady ? config.chainId : null,
+    contractAddress: config.studioReady ? config.contractAddress : "",
+    contractUrl,
+    transactionUrl: config.studioReady && transactionId ? `${config.explorerUrl}/tx/${transactionId}` : "",
   };
 }
 

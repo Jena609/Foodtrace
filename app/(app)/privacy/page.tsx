@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Disclaimer } from "@/components/shared/Disclaimer";
 import { PageFrame } from "@/components/shared/PageFrame";
 
 export const metadata: Metadata = { title: "Privacy", description: "What FoodTrace stores, what stays off public reports, and what is never collected." };
@@ -19,6 +20,7 @@ export default function PrivacyPage() {
           <h2 className="font-serif text-2xl">On-chain</h2>
           <p className="mt-2">A studio verification sends product identifiers, public evidence URLs, and an evidence hash. It does not send medical information or private documents. Demo and localhost URLs are not submitted.</p>
         </article>
+        <Disclaimer />
       </div>
     </PageFrame>
   );

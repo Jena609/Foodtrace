@@ -3,8 +3,10 @@ import { prisma } from "@/lib/db/client";
 import { evidenceHash } from "@/lib/evidence/hash";
 import { formatEvidenceText } from "@/lib/evidence/format";
 import { resolveGenLayerConfig } from "@/lib/genlayer/config";
+import { evidenceForResult } from "@/lib/lookup/relevance";
 import { decideMatch } from "@/lib/matching/engine";
 import { collectRecallRecords } from "@/lib/sources/adapters";
+import { catalogSearchRecord } from "@/lib/sources/demo-data";
 import type { ProductSearchInput, RecallRecordInput } from "@/lib/types";
 import { toLookupView, type LookupRecord, type LookupView } from "@/lib/lookup/view";
 
@@ -28,11 +30,13 @@ export async function createLookup(input: ProductSearchInput, userId: string | n
   const collected = await collectRecallRecords(input);
   const now = new Date();
   const decision = decideMatch(input, collected.records, collected.sources, now);
+  const visibleRecords = evidenceForResult(input, collected.records, decision.matchedRecordIds);
+  const storedRecords = visibleRecords.length > 0 ? visibleRecords : [catalogSearchRecord(now)];
   const gen = resolveGenLayerConfig(process.env);
   const mock = gen.mode === "mock";
   const lookupId = nid("lk");
   const resultId = nid("vr");
-  const evidenceRows = collected.records.map((record) => evidenceRow(lookupId, record, decision.matchedRecordIds.includes(record.id), decision.matchedCriteria));
+  const evidenceRows = storedRecords.map((record) => evidenceRow(lookupId, record, decision.matchedRecordIds.includes(record.id), decision.matchedCriteria));
   const hash = evidenceHash({
     input,
     evidence: evidenceRows.map((row) => row.evidenceHash),
@@ -51,7 +55,7 @@ export async function createLookup(input: ProductSearchInput, userId: string | n
       expirationDate: input.expirationDate,
       region: input.region,
       status: decision.status,
-      recalls: { create: collected.records.map((record) => recallRow(record)) },
+      recalls: { create: visibleRecords.map((record) => recallRow(record)) },
       evidence: { create: evidenceRows.map((row) => {
         const { lookupId: storedLookupId, ...rest } = row;
         void storedLookupId;
@@ -75,6 +79,23 @@ export async function createLookup(input: ProductSearchInput, userId: string | n
       },
     },
   });
+
+  if (!mock) {
+    const { submitServerVerification } = await import("@/lib/genlayer/server-write");
+    const submitted = await submitServerVerification(lookupId);
+    if (!submitted.ok && !submitted.queued) {
+      await prisma.verificationResult.updateMany({
+        where: { id: resultId, finalizationStatus: { not: "finalized" } },
+        data: { finalizationStatus: "unavailable", isMock: false, lastError: submitted.error },
+      });
+    } else {
+      const { refreshVerification } = await import("@/lib/genlayer/studio");
+      await Promise.race([
+        refreshVerification(lookupId),
+        new Promise((resolve) => setTimeout(resolve, 8000)),
+      ]);
+    }
+  }
 
   const view = await getLookup(lookupId);
   if (!view) throw new Error("The lookup could not be read after it was saved.");

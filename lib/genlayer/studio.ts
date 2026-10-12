@@ -1,8 +1,9 @@
+import type { Prisma } from "@prisma/client";
 import { isAddress, type Address } from "viem";
 import { prisma } from "@/lib/db/client";
 import { isFetchablePublicUrl } from "@/lib/security/url";
 import { UNAVAILABLE_MESSAGE, resolveGenLayerConfig } from "@/lib/genlayer/config";
-import { isTransactionHash, mapTransactionObservation } from "@/lib/genlayer/observation";
+import { CONSENSUS_TIMEOUT_MS, FINALIZATION_TIMEOUT_MS, isTransactionHash, mapTransactionObservation, statusAfterWait } from "@/lib/genlayer/observation";
 import { VERDICT_STATUSES, type VerdictStatus } from "@/lib/types";
 
 interface ChainRecord {
@@ -51,17 +52,20 @@ export function publicEvidenceUrls(urls: string[], appUrl: string): string[] {
   return [...new Set(allowed)].slice(0, 6);
 }
 
+const EXPLORER_STATUSES = new Set(["PENDING", "PROPOSING", "COMMITTING", "REVEALING", "ACCEPTED", "FINALIZED", "CANCELED", "LEADER_TIMEOUT", "VALIDATORS_TIMEOUT", "UNDETERMINED"]);
+
 function unwrapTransaction(payload: unknown): unknown {
   if (!payload || typeof payload !== "object") return payload;
   const record = payload as Record<string, unknown>;
   if (typeof record.statusName === "string" || typeof record.status_name === "string") return record;
+  if (typeof record.status === "string" && EXPLORER_STATUSES.has(record.status)) return record;
   if (record.transaction && typeof record.transaction === "object") return unwrapTransaction(record.transaction);
   if (record.data && typeof record.data === "object") return unwrapTransaction(record.data);
   if (record.result && typeof record.result === "object") return unwrapTransaction(record.result);
   return record;
 }
 
-export async function fetchStudioTransaction(hash: string): Promise<unknown | null> {
+async function fetchStudioTransactionOnce(hash: string): Promise<unknown | null> {
   const config = resolveGenLayerConfig(process.env);
   if (!config.rpcUrl || !isTransactionHash(hash)) return null;
   try {
@@ -82,6 +86,19 @@ export async function fetchStudioTransaction(hash: string): Promise<unknown | nu
   } catch {
     return null;
   }
+}
+
+export async function fetchStudioTransaction(hash: string): Promise<unknown | null> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const observed = await fetchStudioTransactionOnce(hash);
+    if (observed) return observed;
+  }
+  return null;
+}
+
+export function safeGenLayerError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "GenLayer verification failed.";
+  return message.replace(/0x[0-9a-fA-F]{64}/g, "0x…").slice(0, 300);
 }
 
 function asRecord(value: unknown): ChainRecord | null {
@@ -183,55 +200,105 @@ export async function attachTransaction(lookupId: string, evaluationId: string, 
   return { ok: true as const };
 }
 
+async function saveUnlessFinalized(resultId: string, data: Prisma.VerificationResultUpdateManyMutationInput): Promise<boolean> {
+  const saved = await prisma.verificationResult.updateMany({
+    where: { id: resultId, finalizationStatus: { not: "finalized" } },
+    data,
+  });
+  return saved.count > 0;
+}
+
+async function readStoredVerdict(evaluationId: string): Promise<ChainRecord | null> {
+  let last: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const chain = await readContractResult("get_verification_result", evaluationId);
+      if (chain && chain.request_id === evaluationId && isVerdict(chain.status)) return chain;
+      last = new Error("The contract result did not match this evaluation.");
+    } catch (error) {
+      last = error;
+    }
+  }
+  if (last) return null;
+  return null;
+}
+
 export async function refreshVerification(lookupId: string) {
   const lookup = await prisma.productLookup.findUnique({ where: { id: lookupId }, include: { result: true } });
   if (!lookup?.result) return { ok: false as const, status: 404, error: "That lookup was not found." };
   const result = lookup.result;
+  if (result.finalizationStatus === "finalized" && !result.isMock) {
+    return { ok: true as const, finalizationStatus: "finalized" as const, detail: "The evaluation created by this transaction is finalized." };
+  }
   if (result.isMock || result.finalizationStatus === "mock") {
     return { ok: true as const, finalizationStatus: "mock", detail: "MOCK RESULT. This lookup was not sent to GenLayer." };
   }
   if (!result.genlayerTransactionId || !result.genlayerEvaluationId) {
-    return { ok: true as const, finalizationStatus: result.finalizationStatus, detail: "No GenLayer transaction is linked to this lookup." };
+    const started = result.submittedAt ?? result.evaluatedAt;
+    const waitingMs = Date.now() - started.getTime();
+    if (result.finalizationStatus !== "preliminary" && waitingMs >= FINALIZATION_TIMEOUT_MS) {
+      const detail = result.lastError || "GenLayer did not return a transaction id within 10 minutes.";
+      await saveUnlessFinalized(result.id, { finalizationStatus: "unavailable", lastError: detail });
+      return { ok: true as const, finalizationStatus: "unavailable" as const, detail };
+    }
+    return { ok: true as const, finalizationStatus: result.finalizationStatus, detail: "No GenLayer transaction is linked to this lookup yet." };
   }
+  const started = result.submittedAt ?? result.evaluatedAt;
+  const ageMs = Date.now() - started.getTime();
   const observedRaw = await fetchStudioTransaction(result.genlayerTransactionId);
-  if (!observedRaw) {
-    return { ok: true as const, finalizationStatus: "pending", detail: "The transaction status is not available yet. No finalized result was applied." };
+  const observed = observedRaw ? mapTransactionObservation(observedRaw) : null;
+  const decision = statusAfterWait({
+    ageMs,
+    observed: observed?.finalizationStatus ?? null,
+    limitMs: FINALIZATION_TIMEOUT_MS,
+    consensusLimitMs: CONSENSUS_TIMEOUT_MS,
+  });
+
+  if (!observed) {
+    const detail = decision.timedOut
+      ? "The GenLayer explorer and RPC did not return this transaction before the timeout."
+      : "The transaction status is not available yet. No finalized result was applied.";
+    await saveUnlessFinalized(result.id, { finalizationStatus: decision.finalizationStatus, lastError: detail });
+    return { ok: true as const, finalizationStatus: decision.finalizationStatus, detail };
   }
-  const observed = mapTransactionObservation(observedRaw);
+
   if (observed.finalizationStatus !== "finalized") {
-    await prisma.verificationResult.update({
-      where: { id: result.id },
-      data: { finalizationStatus: observed.finalizationStatus },
+    const detail = decision.timedOut
+      ? "GenLayer did not finalize this evaluation within 30 minutes."
+      : observed.detail;
+    await saveUnlessFinalized(result.id, {
+      finalizationStatus: decision.finalizationStatus,
+      lastError: decision.finalizationStatus === "pending" || decision.finalizationStatus === "submitted" ? "" : detail,
     });
-    return { ok: true as const, finalizationStatus: observed.finalizationStatus, detail: observed.detail };
+    return { ok: true as const, finalizationStatus: decision.finalizationStatus, detail };
   }
-  let chain: ChainRecord | null = null;
-  try {
-    chain = await readContractResult("get_verification_result", result.genlayerEvaluationId);
-  } catch {
-    chain = null;
-  }
-  if (!chain || chain.request_id !== result.genlayerEvaluationId || !isVerdict(chain.status)) {
-    return {
-      ok: true as const,
-      finalizationStatus: "pending",
-      detail: "The transaction is finalized, but FoodTrace could not read the evaluation created by this request. No other result was applied.",
-    };
+
+  const chain = await readStoredVerdict(result.genlayerEvaluationId);
+  if (!chain || !isVerdict(chain.status)) {
+    const gaveUp = ageMs >= CONSENSUS_TIMEOUT_MS;
+    const detail = gaveUp
+      ? "The transaction is finalized, but the contract result for this request could not be read before the timeout."
+      : "The transaction is finalized, but FoodTrace could not read the evaluation created by this request. No other result was applied.";
+    const status = gaveUp ? "failed" : "pending";
+    await saveUnlessFinalized(result.id, { finalizationStatus: status, lastError: detail });
+    return { ok: true as const, finalizationStatus: status, detail };
   }
   const evaluatedAt = chain.evaluatedAt ? new Date(chain.evaluatedAt) : new Date();
-  await prisma.verificationResult.update({
-    where: { id: result.id },
-    data: {
-      status: chain.status,
-      confidence: chain.confidence === "high" || chain.confidence === "medium" || chain.confidence === "low" ? chain.confidence : "low",
-      reasoningSummary: chain.reasoningSummary || result.reasoningSummary,
-      matchedCriteria: JSON.stringify(chain.matchedCriteria ?? []),
-      finalizationStatus: "finalized",
-      isMock: false,
-      evaluatedAt: Number.isNaN(evaluatedAt.getTime()) ? new Date() : evaluatedAt,
-      chainPayload: JSON.stringify(chain),
-    },
+  const wrote = await saveUnlessFinalized(result.id, {
+    status: chain.status,
+    confidence: chain.confidence === "high" || chain.confidence === "medium" || chain.confidence === "low" ? chain.confidence : "low",
+    reasoningSummary: chain.reasoningSummary || result.reasoningSummary,
+    matchedCriteria: JSON.stringify(chain.matchedCriteria ?? []),
+    finalizationStatus: "finalized",
+    isMock: false,
+    lastError: "",
+    evaluatedAt: Number.isNaN(evaluatedAt.getTime()) ? new Date() : evaluatedAt,
+    finalizedAt: new Date(),
+    chainPayload: JSON.stringify(chain),
   });
+  if (!wrote) {
+    return { ok: true as const, finalizationStatus: "finalized" as const, detail: "The evaluation created by this transaction is finalized." };
+  }
   await prisma.productLookup.update({ where: { id: lookupId }, data: { status: chain.status } });
   return { ok: true as const, finalizationStatus: "finalized" as const, detail: "The evaluation created by this transaction is finalized." };
 }

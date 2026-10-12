@@ -19,7 +19,7 @@ FoodTrace is a Next.js application with a Python Intelligent Contract. The publi
 
 ## Data
 
-Prisma and SQLite store lookups, evidence, reports, inventory, and appeal records. The database file is local and gitignored. Product matching lives in `lib/matching`. Source adapters live in `lib/sources`. The demo catalog is fictional and labeled. openFDA, manufacturer, and retailer adapters run only when their environment values are set.
+Prisma stores lookups, evidence, reports, inventory, and appeal records. Local development uses SQLite through `DATABASE_URL`. Production uses Turso through `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. Product matching lives in `lib/matching`. Source adapters live in `lib/sources`. The demo catalog is fictional and labeled. openFDA, manufacturer, and retailer adapters run only when their environment values are set.
 
 ## GenLayer
 

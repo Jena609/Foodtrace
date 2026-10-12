@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
   reactStrictMode: true,
+  serverExternalPackages: ["@prisma/adapter-libsql", "@libsql/client", "libsql"],
+  outputFileTracingIncludes: {
+    "/api/**": ["./prisma/migrations/**/*"],
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),

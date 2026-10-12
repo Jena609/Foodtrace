@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/db/log";
 import { collectRecallRecords } from "@/lib/sources/adapters";
 import { decideMatch } from "@/lib/matching/engine";
 import { createLookup } from "@/lib/lookup/service";
@@ -7,6 +8,7 @@ import { clientIp, lookupRateLimit } from "@/lib/security/rate-limit";
 import { productSearchSchema } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const limit = lookupRateLimit.check(clientIp(request), Date.now());
@@ -21,7 +23,8 @@ export async function POST(request: Request) {
     const session = await ensureSession(request);
     const lookup = await createLookup(parsed.data, session.userId);
     return applySession(apiOk({ id: lookup.id, lookup }), session.cookie);
-  } catch {
+  } catch (error) {
+    logServerError("lookup.create", error);
     return apiError(503, "database_unavailable", "The lookup could not be saved. Check the database and try again.");
   }
 }

@@ -35,14 +35,15 @@ export const STATUS_COPY: Record<VerdictStatus, StatusCopy> = {
 };
 
 export const FINALIZATION_COPY: Record<FinalizationStatus, string> = {
-  preliminary: "Preliminary result from FoodTrace matching. This is not a GenLayer-finalized result.",
-  mock: "MOCK RESULT. Demo data was evaluated locally. GenLayer did not finalize this result.",
-  pending: "Verification is pending. No finalized result has been confirmed for this transaction.",
-  finalized: "GenLayer finalized this evaluation.",
-  disputed: "The GenLayer transaction is disputed. The earlier result was not replaced.",
-  inconclusive: "The GenLayer evaluation was inconclusive. No finalized result was created.",
-  failed: "The GenLayer transaction failed. No finalized result was created.",
-  unavailable: "GenLayer verification is currently unavailable. No finalized result was created.",
+  preliminary: "GenLayer verification: Pending. The evidence evaluation is still being processed.",
+  mock: "GenLayer verification: Unavailable. The result could not be finalized by GenLayer. Please retry later.",
+  submitted: "GenLayer verification: Pending. The evidence evaluation is still being processed.",
+  pending: "GenLayer verification: Pending. The evidence evaluation is still being processed.",
+  finalized: "GenLayer verification: Finalized. The result was finalized by GenLayer.",
+  disputed: "GenLayer verification: Failed. The evidence could not be finalized.",
+  inconclusive: "GenLayer verification: Failed. The evidence could not be finalized.",
+  failed: "GenLayer verification: Failed. The evidence could not be finalized.",
+  unavailable: "GenLayer verification: Unavailable. The result could not be finalized by GenLayer. Please retry later.",
 };
 
 export const SAFETY_DISCLAIMER =

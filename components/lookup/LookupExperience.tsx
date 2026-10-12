@@ -11,6 +11,7 @@ export function LookupExperience({ initial, autorun }: { initial: ProductSearchI
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [demoLabel, setDemoLabel] = useState<string | null>(null);
   const started = useRef(false);
 
   async function run(values: ProductSearchInput) {
@@ -49,8 +50,10 @@ export function LookupExperience({ initial, autorun }: { initial: ProductSearchI
       <p className="text-sm font-semibold uppercase tracking-wide text-pine">Consumer lookup</p>
       <h1 className="mt-2 font-serif text-4xl">Check a product</h1>
       <p className="mt-3 text-muted">Enter what is printed on the package. A wallet is not required for this check.</p>
+      {demoLabel ? <p className="mt-4 inline-flex rounded-full bg-amber-soft px-3 py-1 text-sm font-semibold text-amber" role="status">Demo Mode · {demoLabel} · Fictional Demo Data</p> : null}
       <form
-        className="ft-card mt-8 grid gap-4 p-5 sm:p-6"
+        id="product-check"
+        className="ft-card mt-8 grid scroll-mt-24 gap-4 p-5 sm:p-6"
         onSubmit={(event) => {
           event.preventDefault();
           void run(form);
@@ -69,7 +72,7 @@ export function LookupExperience({ initial, autorun }: { initial: ProductSearchI
         </label>
         <div className="flex flex-wrap gap-2">
           <button className="rounded-full bg-pine px-5 py-3 font-semibold text-white disabled:opacity-60" disabled={pending} type="submit">
-            {pending ? "Checking sources..." : "Check product"}
+            {pending ? "Submitting the evaluation..." : "Check product"}
           </button>
           <button className="rounded-full border border-line bg-white px-5 py-3 font-semibold" type="button" onClick={() => setScanning((value) => !value)}>
             {scanning ? "Close scanner" : "Scan barcode"}
@@ -80,12 +83,25 @@ export function LookupExperience({ initial, autorun }: { initial: ProductSearchI
         {error ? <p role="alert" className="rounded-2xl bg-recall-soft px-4 py-3 text-sm text-recall">{error}</p> : null}
         {scanning ? <BarcodeScanner onDetect={(barcode) => { update("barcode", barcode); setScanning(false); }} /> : null}
       </form>
-      <section className="mt-8">
-        <h2 className="font-semibold">Example searches</h2>
-        <p className="mt-1 text-sm text-muted">These use fictional demo records. They are labeled in the result.</p>
+      <section id="demo-scenarios" className="mt-8 scroll-mt-24">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-semibold">Try Demo</h2>
+          <span className="rounded-full bg-amber-soft px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber">Demo Mode</span>
+        </div>
+        <p className="mt-1 text-sm text-muted">Choose a scenario, then click Check Product. These records are Fictional Demo Data and are not official recalls.</p>
         <div className="mt-3 grid gap-2">
           {EXAMPLE_SEARCHES.map((example) => (
-            <button key={example.id} className="ft-card p-4 text-left" type="button" onClick={() => { setForm(example.input); void run(example.input); }}>
+            <button
+              key={example.id}
+              className="ft-card p-4 text-left"
+              type="button"
+              onClick={() => {
+                setForm(example.input);
+                setDemoLabel(example.label);
+                setError(null);
+                document.getElementById("product-check")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
               <span className="font-semibold">{example.label}</span>
               <span className="mt-1 block text-sm text-muted">{example.description}</span>
             </button>

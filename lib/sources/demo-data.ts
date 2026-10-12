@@ -7,6 +7,45 @@ export interface ExampleSearch {
   input: ProductSearchInput;
 }
 
+const PUBLIC_DEMO_SLUG: Record<string, string> = {
+  "demo-spinach-gov": "spinach-gov",
+  "demo-spinach-gov-duplicate": "spinach-duplicate",
+  "demo-spinach-retailer": "spinach-retailer",
+  "demo-pb-gov": "peanut-gov",
+  "demo-pb-manufacturer": "peanut-manufacturer",
+  "demo-flour-gov": "flour-gov",
+  "demo-stale-crackers": "stale-crackers",
+  "demo-catalog-search": "catalog-search",
+};
+
+export function demoEvidenceUrl(id: string, fallbackPath: string): string {
+  const slug = PUBLIC_DEMO_SLUG[id];
+  const app = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/$/, "");
+  if (slug && app.startsWith("https://")) return `${app}/api/evidence/demo/${slug}`;
+  return `https://demo.foodtrace.invalid/${fallbackPath}`;
+}
+
+export function catalogSearchRecord(now = new Date()): RecallRecordInput {
+  return {
+    id: "demo-catalog-search",
+    sourceName: "FoodTrace Demo Catalog",
+    sourceUrl: demoEvidenceUrl("demo-catalog-search", "catalog/search"),
+    sourcePriority: 6,
+    productName: "FoodTrace catalog receipt",
+    brand: "FoodTrace Demo",
+    barcode: "",
+    lotNumbers: [],
+    recallReason: "Fictional Demo Data. This page is the search receipt for the demo catalog. It is not an official recall notice and it does not name a recalled product.",
+    recallDate: "",
+    geographicScope: "Fictional demo catalog",
+    rawEvidence: "Fictional Demo Data. The demo catalog was searched. No product-specific recall record was stored for this check. This page is not a government recall.",
+    retrievedAt: now.toISOString(),
+    isDemoData: true,
+    recordKind: "context",
+    region: "",
+  };
+}
+
 export function demoRecords(now = new Date()): RecallRecordInput[] {
   const fresh = now.toISOString();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
@@ -15,7 +54,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-spinach-gov",
       sourceName: "Demo Government Food-Safety Authority",
-      sourceUrl: "https://demo.foodtrace.invalid/government/north-orchard-spinach",
+      sourceUrl: demoEvidenceUrl("demo-spinach-gov", "government/north-orchard-spinach"),
       sourcePriority: 1,
       productName: "North Orchard Organic Baby Spinach",
       brand: "North Orchard",
@@ -33,7 +72,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-spinach-gov-duplicate",
       sourceName: "Demo Government Food-Safety Authority",
-      sourceUrl: "https://demo.foodtrace.invalid/government/north-orchard-spinach",
+      sourceUrl: demoEvidenceUrl("demo-spinach-gov-duplicate", "government/north-orchard-spinach-duplicate"),
       sourcePriority: 1,
       productName: "North Orchard Organic Baby Spinach",
       brand: "North Orchard",
@@ -51,7 +90,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-spinach-retailer",
       sourceName: "Demo Retailer Alert",
-      sourceUrl: "https://demo.foodtrace.invalid/retailer/north-orchard-spinach",
+      sourceUrl: demoEvidenceUrl("demo-spinach-retailer", "retailer/north-orchard-spinach"),
       sourcePriority: 4,
       productName: "North Orchard Organic Baby Spinach",
       brand: "North Orchard",
@@ -69,7 +108,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-pb-gov",
       sourceName: "Demo Government Food-Safety Authority",
-      sourceUrl: "https://demo.foodtrace.invalid/government/cedar-rye-peanut-butter",
+      sourceUrl: demoEvidenceUrl("demo-pb-gov", "government/cedar-rye-peanut-butter"),
       sourcePriority: 1,
       productName: "Cedar & Rye Creamy Peanut Butter",
       brand: "Cedar & Rye",
@@ -87,7 +126,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-pb-manufacturer",
       sourceName: "Demo Manufacturer Notice",
-      sourceUrl: "https://demo.foodtrace.invalid/manufacturer/cedar-rye-peanut-butter",
+      sourceUrl: demoEvidenceUrl("demo-pb-manufacturer", "manufacturer/cedar-rye-peanut-butter"),
       sourcePriority: 2,
       productName: "Cedar & Rye Creamy Peanut Butter",
       brand: "Cedar & Rye",
@@ -105,7 +144,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-flour-gov",
       sourceName: "Demo Government Food-Safety Authority",
-      sourceUrl: "https://demo.foodtrace.invalid/government/mesa-grain-flour",
+      sourceUrl: demoEvidenceUrl("demo-flour-gov", "government/mesa-grain-flour"),
       sourcePriority: 1,
       productName: "Mesa Grain All-Purpose Flour",
       brand: "Mesa Grain",
@@ -123,7 +162,7 @@ export function demoRecords(now = new Date()): RecallRecordInput[] {
     {
       id: "demo-stale-crackers",
       sourceName: "Demo Government Food-Safety Authority",
-      sourceUrl: "https://demo.foodtrace.invalid/government/stale-sample-crackers",
+      sourceUrl: demoEvidenceUrl("demo-stale-crackers", "government/stale-sample-crackers"),
       sourcePriority: 1,
       productName: "Stale Sample Crackers",
       brand: "Stale Sample",

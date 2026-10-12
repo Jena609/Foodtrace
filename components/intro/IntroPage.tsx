@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { IntroScene } from "@/components/intro/IntroScene";
 
-const phases = ["Checking sources", "Evidence found", "Trace verified"] as const;
+const phases = ["Checking sources", "Evidence found", "Check complete"] as const;
 
 const steps = [
   ["01", "Enter the product", "Barcode, name, brand, lot, date, or region."],
@@ -76,6 +76,9 @@ export function IntroPage() {
               Enter FoodTrace
               <ArrowRight aria-hidden="true" className="h-4 w-4 transition duration-200 group-hover:translate-x-1" />
               <span className="absolute bottom-1.5 left-8 right-8 h-px origin-left scale-x-0 bg-white/80 transition duration-300 group-hover:scale-x-100" />
+            </Link>
+            <Link href="/lookup#demo-scenarios" className="inline-flex min-h-12 items-center justify-center rounded-full border border-line bg-white px-8 py-3 text-base font-semibold text-ink">
+              Try Demo
             </Link>
             <a href="#how-it-works" className="text-sm font-semibold text-lake underline-offset-4 hover:underline">How It Works</a>
           </div>

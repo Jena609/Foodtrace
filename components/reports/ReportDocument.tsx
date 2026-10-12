@@ -21,11 +21,11 @@ export function ReportDocument({ report }: { report: PublicReport }) {
       <p className="mt-3 text-muted">Public evidence for this check. Business quantity, supplier, email, and wallet address are not included.</p>
       <div className="no-print mt-4"><ReportActions reportId={report.reportId} /></div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <StatusMark status={report.status} pending={report.finalizationStatus === "pending"} />
+        <StatusMark status={report.status} pending={!(report.finalizationStatus === "finalized" && !report.isMock)} />
         {report.isMock ? <span className="rounded-full bg-amber-soft px-3 py-1 text-sm font-semibold text-amber">MOCK RESULT</span> : null}
-        <span className="text-sm text-muted">Confidence: {report.confidence}</span>
+        {report.finalizationStatus === "finalized" && !report.isMock ? <span className="text-sm text-muted">Confidence: {report.confidence}</span> : null}
       </div>
-      <p className="mt-4 text-lg leading-8">{report.reasoningSummary}</p>
+      {report.finalizationStatus === "finalized" && !report.isMock ? <p className="mt-4 text-lg leading-8">{report.reasoningSummary}</p> : null}
       <p className="mt-2 text-sm text-muted">{FINALIZATION_COPY[report.finalizationStatus]}</p>
 
       <section className="mt-8">

@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/db/log";
 import { DEMO_BUSINESS, DEMO_ITEMS } from "@/lib/inventory/demo";
 import { addInventoryItem, inventorySummary, toCsv } from "@/lib/inventory/service";
 import { alertsFor, deriveInventoryStatus } from "@/lib/inventory/status";
@@ -25,19 +26,21 @@ export async function GET(request: Request) {
       notice: "DEMO DATA. These inventory rows are fictional and are not stored against a connected wallet.",
     });
   }
-  if (url.searchParams.get("format") === "csv") {
-    const signature = await requireSignature(request, "inventory.read", {});
-    if (!signature.ok) return apiError(401, "unauthorized", signature.error);
-    const summary = await inventorySummary(signature.wallet);
-    if (!summary) return apiError(404, "no_business", "Create a business profile before exporting inventory.");
-    return new Response(toCsv(summary.items), {
-      headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": "attachment; filename=foodtrace-inventory.csv" },
-    });
-  }
   const signature = await requireSignature(request, "inventory.read", {});
   if (!signature.ok) return apiError(401, "unauthorized", signature.error);
-  const summary = await inventorySummary(signature.wallet);
-  return apiOk({ demo: false, summary });
+  try {
+    const summary = await inventorySummary(signature.wallet);
+    if (url.searchParams.get("format") === "csv") {
+      if (!summary) return apiError(404, "no_business", "Create a business profile before exporting inventory.");
+      return new Response(toCsv(summary.items), {
+        headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": "attachment; filename=foodtrace-inventory.csv" },
+      });
+    }
+    return apiOk({ demo: false, summary });
+  } catch (error) {
+    logServerError("inventory.read", error);
+    return apiError(503, "database_unavailable", "Inventory could not be read. Check the database and try again.");
+  }
 }
 
 export async function POST(request: Request) {
@@ -47,7 +50,13 @@ export async function POST(request: Request) {
   if (!parsed.success) return fromZod(parsed.error);
   const signature = await requireSignature(request, "inventory.create", json.body);
   if (!signature.ok) return apiError(401, "unauthorized", signature.error);
-  const item = await addInventoryItem(signature.wallet, parsed.data);
+  let item: Awaited<ReturnType<typeof addInventoryItem>>;
+  try {
+    item = await addInventoryItem(signature.wallet, parsed.data);
+  } catch (error) {
+    logServerError("inventory.create", error);
+    return apiError(503, "database_unavailable", "Inventory could not be saved. Check the database and try again.");
+  }
   if (!item) return apiError(409, "no_business", "Create a business profile before adding inventory.");
   await sessionUserId(request);
   return apiOk({ item });

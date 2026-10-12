@@ -118,6 +118,13 @@ model VerificationResult {
   isMock                Boolean   @default(false)
   finalizationStatus    String
   chainPayload          String    @default("")
+  lastError             String    @default("")
+  submittedAt           DateTime?
+  finalizedAt           DateTime?
+  genlayerNetwork       String    @default("")
+  genlayerChainId       Int       @default(0)
+  contractAddress       String    @default("")
+  explorerTransactionUrl String   @default("")
   appeals               Appeal[]
 
   @@index([genlayerEvaluationId])

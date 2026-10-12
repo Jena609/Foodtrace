@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { UNAVAILABLE_MESSAGE, resolveGenLayerConfig } from "@/lib/genlayer/config";
-import { mapTransactionObservation, readLinkedEvaluation } from "@/lib/genlayer/observation";
+import { mapTransactionObservation, readLinkedEvaluation, statusAfterWait } from "@/lib/genlayer/observation";
 
 describe("GenLayer mode", () => {
   it("defaults to mock and does not claim studio readiness", () => {
@@ -41,6 +41,25 @@ describe("GenLayer mode", () => {
     expect(mapTransactionObservation({ statusName: "FINALIZED", resultName: "MAJORITY_DISAGREE", txExecutionResultName: "FINISHED_WITH_RETURN" }).finalizationStatus).toBe("disputed");
     expect(mapTransactionObservation({ statusName: "UNDETERMINED" }).finalizationStatus).toBe("inconclusive");
     expect(mapTransactionObservation({ statusName: "FINALIZED", resultName: "FAILURE", txExecutionResultName: "FINISHED_WITH_ERROR" }).finalizationStatus).toBe("failed");
+    expect(mapTransactionObservation({ status: "FINALIZED", consensus_data: { leader_receipt: [{ execution_result: "SUCCESS" }] } }).finalizationStatus).toBe("finalized");
+    expect(mapTransactionObservation({ status: "FINALIZED" }).finalizationStatus).toBe("pending");
+    expect(mapTransactionObservation({ status: "FINALIZED", consensus_data: { leader_receipt: [{ execution_result: "ERROR" }] } }).finalizationStatus).toBe("failed");
+    expect(mapTransactionObservation({
+      status: "FINALIZED",
+      consensus_data: {
+        leader_receipt: [{ execution_result: "SUCCESS" }],
+        validators: [{ execution_result: "ERROR" }],
+      },
+    }).finalizationStatus).toBe("finalized");
+  });
+
+  it("keeps an evaluation pending until the timeout, then fails or marks the RPC unavailable", () => {
+    expect(statusAfterWait({ ageMs: 1000, observed: "pending" }).finalizationStatus).toBe("pending");
+    expect(statusAfterWait({ ageMs: 1000, observed: null }).finalizationStatus).toBe("pending");
+    expect(statusAfterWait({ ageMs: 10 * 60 * 1000, observed: "pending" })).toEqual({ finalizationStatus: "pending", timedOut: false });
+    expect(statusAfterWait({ ageMs: 30 * 60 * 1000, observed: "pending" })).toEqual({ finalizationStatus: "failed", timedOut: true });
+    expect(statusAfterWait({ ageMs: 10 * 60 * 1000, observed: null })).toEqual({ finalizationStatus: "unavailable", timedOut: true });
+    expect(statusAfterWait({ ageMs: 10 * 60 * 1000, observed: "finalized" }).finalizationStatus).toBe("finalized");
   });
 
   it("reads the evaluation linked to a transaction instead of the newest evaluation", () => {

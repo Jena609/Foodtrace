@@ -15,6 +15,7 @@ export type RecordKind = "recall" | "clearance" | "context";
 export type FinalizationStatus =
   | "preliminary"
   | "mock"
+  | "submitted"
   | "pending"
   | "finalized"
   | "disputed"

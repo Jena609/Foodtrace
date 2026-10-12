@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/db/log";
 import { listHistory } from "@/lib/lookup/service";
 import { apiError, apiOk } from "@/lib/http";
 import { sessionUserId } from "@/lib/security/actor";
@@ -10,7 +11,8 @@ export async function GET(request: Request) {
     if (!userId) return apiOk({ signedIn: false, items: [] });
     const items = await listHistory(userId);
     return apiOk({ signedIn: true, items });
-  } catch {
+  } catch (error) {
+    logServerError("history.read", error);
     return apiError(503, "database_unavailable", "History could not be read. Check the database and try again.");
   }
 }
